@@ -4,6 +4,8 @@ Two systemd services that keep a home server in sync with this machine's power s
 
 Is WOL supported? Go to step 6 to check FIRST!
 
+I personally use a HP Mini PC as homeserver, for the very reason that it supports WOL by default!.
+
 ## Why not just use `/etc/systemd/system-shutdown/`?
 
 Scripts placed in `/etc/systemd/system-shutdown/` run *very* late in the shutdown sequence - after systemd has already torn down networking and most other services. Any script there that needs the network (like an SSH call) will silently fail with a connection timeout.
