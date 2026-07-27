@@ -1,4 +1,4 @@
-# Notify Remote Server on Shutdown
+# Wake On LAN (Homeserver)
 
 Runs an SSH command on a remote server whenever this machine shuts down or powers off - useful for telling a home server to also shut down when your desktop does.
 
