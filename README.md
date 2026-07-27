@@ -1,6 +1,6 @@
-# Wake On LAN (Homeserver)
+# Sleep and Wake a Remote Server with Wake-On-LAN
 
-Runs an SSH command on a remote server whenever this machine shuts down or powers off - useful for telling a home server to also shut down when your desktop does.
+Two systemd services that keep a home server in sync with this machine's power state: one shuts the server down over SSH whenever this PC shuts down, the other wakes it via Wake-on-LAN whenever the PC boots.
 
 ## Why not just use `/etc/systemd/system-shutdown/`?
 
@@ -103,9 +103,9 @@ Check whether WOL is currently supported/enabled on that adapter (requires `etht
 ```bash
 sudo ethtool enp3s0 | grep Wake-on
 ```
-- `Supports Wake-on: pumbg` -> the adapter supports it
-- `Wake-on: d` -> currently **disabled** (`d` = disabled)
-- `Wake-on: g` -> currently **enabled** (`g` = magic packet)
+- `Supports Wake-on: pumbg` → the adapter supports it
+- `Wake-on: d` → currently **disabled** (`d` = disabled)
+- `Wake-on: g` → currently **enabled** (`g` = magic packet)
 
 Enable it if needed:
 ```bash
@@ -167,6 +167,40 @@ chmod +x sleep-server.sh wake-server.sh
 
 Fill in your own values (`SERVER_USER`, `SERVER_IP`, `SSH_KEY`, `SERVER_MAC`) before using them. `sleep-server.sh` is the same command wired into the systemd service in step 4 - the systemd unit is what makes it fire automatically on shutdown; the script itself is handy for testing or manual use.
 
+### 8. Automatically wake the server whenever this machine boots
+
+If you want the server to wake up every time you turn this PC on, create a matching service on the boot side:
+
+```bash
+sudo tee /etc/systemd/system/wake-server.service > /dev/null << 'EOF'
+[Unit]
+Description=Wake remote server on boot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c '/usr/bin/wakeonlan A0:D3:C1:2C:85:42 >> /var/log/wake-server.log 2>&1'
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now wake-server.service
+```
+
+Replace the MAC address with your server's actual one (from step 6).
+
+Unlike the shutdown service, this one is simpler - it just needs to run once at boot, after the network is up, so `ExecStart=` on its own is enough (no `/bin/true` trick, no `ExecStop=`).
+
+Test:
+```bash
+cat /var/log/wake-server.log
+```
+
+**Note:** Wake-on-LAN reliably wakes a machine from suspend (S3). Waking a machine from a full poweroff/shutdown (S5) depends on BIOS/UEFI support - check for a setting like "Power On By PCI-E/PCIE" or "Wake on LAN" in the server's BIOS and make sure it's enabled, or WOL may only work intermittently.
+
 ## Testing
 
 You can test the `ExecStop` trigger without a real reboot:
@@ -186,6 +220,15 @@ Finally, confirm with a real shutdown:
 sudo systemctl poweroff
 ```
 
+Then confirm the wake side with a real reboot:
+```bash
+sudo reboot
+```
+Check the server actually came back up, and check the log:
+```bash
+cat /var/log/wake-server.log
+```
+
 ## Troubleshooting
 
 | Symptom | Likely cause |
@@ -195,6 +238,7 @@ sudo systemctl poweroff
 | `Permission denied` writing to the log | Log file left over from an earlier test, owned by a different user than root |
 | `Permission denied (publickey,password)` from SSH | The key used by the service (root) isn't the same key you tested manually as your own user, or the key has a passphrase |
 | `network.target: Found ordering cycle` | `Before=` and `After=`/`Requires=` on the same targets contradict each other - drop the conflicting `Before=` lines |
+| Service runs on shutdown but the command never fires | Check for a **duplicate/leftover unit file** with a similar name (e.g. an old `sleep-server.service` from earlier testing) - run `systemctl list-unit-files \| grep -iE "sleep\|notify\|wake"` to check for stragglers, and remove any that aren't the one you actually want |
 | `wakeonlan` runs but server doesn't wake | WOL not enabled on the adapter (`ethtool -s <iface> wol g`), or the setting didn't persist across reboot |
 | Server wakes once then stops waking | The BIOS/UEFI has its own WOL setting that needs enabling separately, or the `ethtool wol g` setting reset after a reboot/driver reload |
 | WOL works on wired LAN but not remotely | Magic packets are broadcast on the local subnet - waking across routers/VLANs needs port forwarding (UDP 9) or a device on the same subnet to relay it |
@@ -202,5 +246,7 @@ sudo systemctl poweroff
 Check service status and logs anytime with:
 ```bash
 systemctl status notify-server-shutdown.service
+systemctl status wake-server.service
 journalctl -u notify-server-shutdown.service --no-pager
+journalctl -u wake-server.service --no-pager
 ```
