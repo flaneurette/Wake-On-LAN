@@ -27,13 +27,13 @@ ssh-keygen -t ed25519 -f ~/.ssh/shutdown_key -N ""
 ### 2. Copy the public key to the remote server
 
 ```bash
-ssh-copy-id -i ~/.ssh/shutdown_key.pub server@192.168.2.100
+ssh-copy-id -i ~/.ssh/shutdown_key.pub server@192.168.1.10
 ```
 (or manually append the `.pub` file's contents to `~/.ssh/authorized_keys` on the remote server)
 
 Test it logs in without a prompt:
 ```bash
-ssh -i ~/.ssh/shutdown_key server@192.168.2.100 "echo it works"
+ssh -i ~/.ssh/shutdown_key server@192.168.1.10 "echo it works"
 ```
 
 ### 3. Allow passwordless `sudo shutdown` on the remote server
@@ -57,7 +57,7 @@ After=network-online.target
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/bin/true
-ExecStop=/bin/bash -c '/usr/bin/ssh -i /home/YOUR_USERNAME/.ssh/shutdown_key -o ConnectTimeout=5 -o StrictHostKeyChecking=no server@192.168.2.100 "sudo /usr/sbin/shutdown now" >> /var/log/sleep-server.log 2>&1'
+ExecStop=/bin/bash -c '/usr/bin/ssh -i /home/YOUR_USERNAME/.ssh/shutdown_key -o ConnectTimeout=5 -o StrictHostKeyChecking=no server@192.168.1.10 "sudo /usr/sbin/shutdown now" >> /var/log/sleep-server.log 2>&1'
 
 [Install]
 WantedBy=multi-user.target
@@ -139,7 +139,7 @@ Two standalone scripts, kept separate so each can be run independently - e.g. wa
 # Puts the remote server to sleep/shutdown over SSH.
 
 SERVER_USER="server"
-SERVER_IP="192.168.2.100"
+SERVER_IP="192.168.1.10"
 SSH_KEY="/home/YOUR_USERNAME/.ssh/shutdown_key"
 LOG="/var/log/sleep-server.log"
 
