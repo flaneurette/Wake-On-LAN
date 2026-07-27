@@ -2,6 +2,8 @@
 
 Two systemd services that keep a home server in sync with this machine's power state: one shuts the server down over SSH whenever the PC shuts down, the other wakes it via Wake-on-LAN whenever the PC boots.
 
+Is WOL supported? Go to step 6 to check FIRST!
+
 ## Why not just use `/etc/systemd/system-shutdown/`?
 
 Scripts placed in `/etc/systemd/system-shutdown/` run *very* late in the shutdown sequence - after systemd has already torn down networking and most other services. Any script there that needs the network (like an SSH call) will silently fail with a connection timeout.
