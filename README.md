@@ -1,6 +1,6 @@
 # Sleep and Wake a Remote Server with Wake-On-LAN
 
-Two systemd services that keep a home server in sync with this machine's power state: one shuts the server down over SSH whenever this PC shuts down, the other wakes it via Wake-on-LAN whenever the PC boots.
+Two systemd services that keep a home server in sync with this machine's power state: one shuts the server down over SSH whenever the PC shuts down, the other wakes it via Wake-on-LAN whenever the PC boots.
 
 ## Why not just use `/etc/systemd/system-shutdown/`?
 
