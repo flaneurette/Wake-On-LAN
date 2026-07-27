@@ -103,9 +103,9 @@ Check whether WOL is currently supported/enabled on that adapter (requires `etht
 ```bash
 sudo ethtool enp3s0 | grep Wake-on
 ```
-- `Supports Wake-on: pumbg` → the adapter supports it
-- `Wake-on: d` → currently **disabled** (`d` = disabled)
-- `Wake-on: g` → currently **enabled** (`g` = magic packet)
+- `Supports Wake-on: pumbg` - the adapter supports it
+- `Wake-on: d` - currently **disabled** (`d` = disabled)
+- `Wake-on: g` - currently **enabled** (`g` = magic packet)
 
 Enable it if needed:
 ```bash
